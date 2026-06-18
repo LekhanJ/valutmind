@@ -1,1 +1,3 @@
 # valutmind
+
+![Architecture](design.png)
