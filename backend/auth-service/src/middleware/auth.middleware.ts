@@ -1,15 +1,22 @@
 import { createMiddleware } from "hono/factory";
+import { UnauthorizedError } from "../errors";
+import { verify } from "hono/jwt";
+
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const authMiddleware = createMiddleware(async (c, next) => {
-    const token = c.req.header("Authorization");
+    const authHeader = c.req.header("Authorization");
 
-    if (!token)
-        return c.json({
-            message:"Unauthorized"
-        }, 401,);
+    if (!authHeader)
+        throw new UnauthorizedError("Authorization header missing");
 
-      // verify jwt
+    const token = authHeader.replace("Bearer ", "");
 
-      await next();
+    try {
+        const payload = await verify(token, JWT_SECRET, "HS256");
+        c.set("user", payload);
+        await next();
+    } catch {
+        throw new UnauthorizedError("Invalid token");
     }
-);
+});
