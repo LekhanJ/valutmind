@@ -2,6 +2,15 @@ import amqp from "amqplib";
 
 let channel: amqp.Channel | undefined;
 
+/**
+ * Routing keys currently published:
+ *   user.created
+ *   user.logged_in
+ *   email.verification_requested
+ *   email.verified
+ *   password.reset_requested
+ *   password.changed
+ */
 export async function connectRabbit() {
     const connection = await amqp.connect(process.env.RABBITMQ_URL!);
 
@@ -12,6 +21,10 @@ export async function connectRabbit() {
     connection.on("close", () => {
         console.error("RabbitMQ connection closed");
         channel = undefined;
+    });
+
+    connection.on("error", (err) => {
+        console.error("RabbitMQ connection error:", err.message);
     });
 }
 

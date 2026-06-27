@@ -1,12 +1,23 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono, type Context } from "hono";
 import { getCookie, setCookie, deleteCookie } from "hono/cookie";
-import { AUTH_CONSTANTS, UnauthorizedError } from "@vaultmind/auth-shared";
-import { loginSchema, registerSchema } from "../schemas/auth.schema";
+import { AUTH_CONSTANTS, UnauthorizedError, createAuthMiddleware, type AuthVariables } from "@vaultmind/auth-shared";
+import {
+    loginSchema,
+    registerSchema,
+    requestPasswordResetSchema,
+    confirmPasswordResetSchema,
+    confirmEmailVerificationSchema,
+} from "../schemas/auth.schema";
 import { authService } from "../services/auth.service";
+import { emailVerificationService } from "../services/email-verification.service";
+import { passwordResetService } from "../services/password-reset.service";
 import { rateLimit } from "../middleware/rate-limit.middleware";
 
-export const authRoute = new Hono();
+const JWT_SECRET = process.env.JWT_SECRET!;
+const authenticate = createAuthMiddleware(JWT_SECRET, "vaultmind.services");
+
+export const authRoute = new Hono<{ Variables: AuthVariables }>();
 
 const REFRESH_COOKIE_OPTIONS = {
     httpOnly: true,
@@ -77,3 +88,55 @@ authRoute.post("/logout", async (c) => {
 
     return c.body(null, 204);
 });
+
+authRoute.post(
+    "/resend-verification",
+    authenticate,
+    rateLimit({ limit: 3, windowSeconds: 300, keyPrefix: "resend-verification" }),
+    async (c) => {
+        const user = c.get("user");
+
+        await emailVerificationService.requestVerification(user.sub);
+
+        return c.body(null, 204);
+    }
+);
+
+authRoute.post(
+    "/verify-email",
+    rateLimit({ limit: 10, windowSeconds: 60, keyPrefix: "verify-email" }),
+    zValidator("json", confirmEmailVerificationSchema),
+    async (c) => {
+        const { token } = c.req.valid("json");
+
+        await emailVerificationService.confirmVerification(token);
+
+        return c.body(null, 204);
+    }
+);
+
+authRoute.post(
+    "/request-password-reset",
+    rateLimit({ limit: 5, windowSeconds: 300, keyPrefix: "request-password-reset" }),
+    zValidator("json", requestPasswordResetSchema),
+    async (c) => {
+        const { email } = c.req.valid("json");
+
+        await passwordResetService.requestReset(email);
+
+        return c.body(null, 204);
+    }
+);
+
+authRoute.post(
+    "/reset-password",
+    rateLimit({ limit: 10, windowSeconds: 60, keyPrefix: "reset-password" }),
+    zValidator("json", confirmPasswordResetSchema),
+    async (c) => {
+        const { token, newPassword } = c.req.valid("json");
+
+        await passwordResetService.confirmReset(token, newPassword);
+
+        return c.body(null, 204);
+    }
+);

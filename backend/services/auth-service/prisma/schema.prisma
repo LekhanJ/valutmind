@@ -41,24 +41,26 @@ model RefreshToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
-  tokenHash String
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("password_reset_tokens")
 }
 
 model EmailVerificationToken {
-  id        String   @id @default(uuid())
-  tokenHash String
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("email_verification_tokens")

@@ -53,7 +53,6 @@ export function authorize(...allowedRoles: Array<AccessTokenPayload["role"]>) {
         const user = c.get("user");
 
         if (!user) {
-            // Programmer error: authorize() used without authenticate() first.
             throw new UnauthorizedError("Authentication required");
         }
 

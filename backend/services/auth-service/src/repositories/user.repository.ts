@@ -18,4 +18,18 @@ export const userRepository = {
             data: { email, passwordHash },
         });
     },
+
+    async markVerified(userId: string) {
+        return prisma.user.update({
+            where: { id: userId },
+            data: { isVerified: true },
+        });
+    },
+ 
+    async updatePasswordHash(userId: string, passwordHash: string) {
+        return prisma.user.update({
+            where: { id: userId },
+            data: { passwordHash },
+        });
+    },
 };

@@ -1,7 +1,8 @@
 import { sign } from "hono/jwt";
-import { randomBytes, createHash } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { AUTH_CONSTANTS, type AccessTokenPayload, type Role } from "@vaultmind/auth-shared";
 import { refreshTokenRepository } from "../repositories/refresh-token.repository";
+import { hashToken } from "../lib/token";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -10,10 +11,6 @@ if (!JWT_SECRET) {
 }
 
 const DEFAULT_AUDIENCE = "vaultmind.services";
-
-function hashToken(token: string): string {
-    return createHash("sha256").update(token).digest("hex");
-}
 
 export const tokenService = {
 

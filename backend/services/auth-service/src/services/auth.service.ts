@@ -3,6 +3,7 @@ import { passwordHasher } from "../lib/password";
 import { publishEvent } from "../lib/events";
 import { userRepository } from "../repositories/user.repository";
 import { tokenService } from "./token.service";
+import { emailVerificationService } from "./email-verification.service";
 import type { LoginInput, RegisterInput } from "../schemas/auth.schema";
 
 type AuthResult = {
@@ -28,6 +29,8 @@ export const authService = {
             userId: user.id,
             email: user.email,
         });
+
+        await emailVerificationService.requestVerification(user.id);
 
         return { accessToken, refreshToken };
     },
@@ -82,7 +85,6 @@ export const authService = {
         await tokenService.revokeRefreshToken(rawRefreshToken);
     },
 };
-
 
 let dummyHashPromise: Promise<string> | null = null;
 
